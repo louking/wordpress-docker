@@ -1,0 +1,98 @@
+# see .env for image version env variables
+# see repo/settings/environments for image version env variables for github actions
+services:
+  wordpress:
+    image: louking/${APP_NAME}-wordpress:${APP_VER}
+    build: 
+      context: wordpress
+      args:
+        - WORDPRESS_VER=${WORDPRESS_VER}
+        - PHP_VER=${PHP_VER}
+    restart: always
+    depends_on:
+      - db
+    ports:
+      - ${APP_PORT}:80
+    networks:
+      - backend-network
+      - frontend-network
+    secrets:
+      - appdb-password
+    volumes:
+      - wordpress:/var/www/html
+      - ${VAR_LOG_HOST}:/var/log
+    environment:
+      TZ: ${TZ}
+      WORDPRESS_DB_HOST: db
+      WORDPRESS_DB_USER: wordpress
+      WORDPRESS_DB_NAME: wordpress
+      WORDPRESS_DB_PASSWORD_FILE: /run/secrets/appdb-password
+      WORDPRESS_DEBUG: ${WORDPRESS_DEBUG}
+
+  db:
+    # https://github.com/docker-library/mysql/issues/275#issuecomment-636831964
+    image: mysql:${MYSQL_VER}
+    # # changed in mysql 8.4
+    # command: --mysql-native-password=ON
+    # command: '--default-authentication-plugin=mysql_native_password'
+    command: '--default-authentication-plugin=mysql_native_password --log_error_verbosity=3' # mysql
+    restart: always
+    secrets:
+      - root-password
+      - appdb-password
+    volumes:
+      - db:/var/lib/mysql
+      - ${VAR_LOG_HOST}:/var/log
+    networks:
+      - backend-network
+    environment:
+      TZ: ${TZ}
+      MYSQL_ROOT_PASSWORD_FILE: /run/secrets/root-password
+      MYSQL_DATABASE: wordpress
+      MYSQL_USER: wordpress
+      MYSQL_PASSWORD_FILE: /run/secrets/appdb-password
+
+  crond:
+    image: louking/${APP_NAME}-crond:${APP_VER}
+    build: 
+      context: crond
+      args:
+        - ALPINE_VER=${ALPINE_VER}
+    user: root
+    restart: always
+    depends_on:
+      - db
+    networks:
+      - backend-network
+    secrets:
+      - root-password
+      - appdb-password
+    volumes:
+      - ./config/msmtprc:/etc/msmtprc:ro
+      - ${VAR_LOG_HOST}:/var/log
+      - ${BACKUP_FOLDER_HOST}/${APP_DATABASE}:/backup
+    environment: 
+      TZ: ${TZ}
+      APP_DATABASE: ${APP_DATABASE}
+      BACKUP_PREFIX: ${BACKUP_PREFIX}
+      PROD: ${PROD}
+      SANDBOX: ${SANDBOX}
+      DEV: ${DEV}
+    # start crond with log level 8 in foreground, output to stderr
+    command: ["crond", "-f", "-d", "8"]
+    # use this to debug
+    # command: ["crond", "-f", "-d", "8", "-l", "2", "-L", "/dev/stdout"]
+
+volumes:
+  db:
+  wordpress:
+
+secrets:
+  root-password:
+    file: config/db/root-password.txt
+  appdb-password:
+    file: config/db/appdb-password.txt
+
+networks:
+  backend-network:
+  frontend-network:

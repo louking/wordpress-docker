@@ -65,6 +65,13 @@ db.sqlite3-journal
 instance/
 .webassets-cache
 
+# local configuration files
+*.json
+*.cfg
+*-config.js
+*_config.py
+config/
+
 # Scrapy stuff:
 .scrapy
 
@@ -169,3 +176,14 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+
+### VisualStudioCode ###
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+### VisualStudioCode Patch ###
+# Ignore all local history of files
+**/.history
