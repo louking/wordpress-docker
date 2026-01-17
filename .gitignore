@@ -71,6 +71,7 @@ instance/
 *-config.js
 *_config.py
 config/
+leaderboards/
 
 # Scrapy stuff:
 .scrapy

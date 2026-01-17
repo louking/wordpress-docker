@@ -20,6 +20,7 @@ services:
       - appdb-password
     volumes:
       - wordpress:/var/www/html
+      - ./leaderboards:/var/www/html/wp-content/leaderboards:ro
       - ${VAR_LOG_HOST}:/var/log
     environment:
       TZ: ${TZ}
